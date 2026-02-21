@@ -37,18 +37,21 @@ async def start_command(client: Client, message: Message):
             if base64_string.startswith("yu3elk"):
                 base64_string = base64_string[6:-1]
                 is_short_link = True
+            if is_short_link:
+                await client.mongodb.add_credits(user_id, 5)
 
         except IndexError:
             return await message.reply("Invalid command format.")
 
         # 3. Check premium status
         is_user_pro = await client.mongodb.is_pro(user_id)
-        
+        # 3.5 Check credits
+        user_credits = await client.mongodb.get_credits(user_id)
         # 4. Check if shortner is enabled
         shortner_enabled = getattr(client, 'shortner_enabled', True)
 
         # 5. If user is not premium AND shortner is enabled, send short URL and return
-        if not is_user_pro and user_id != OWNER_ID and not is_short_link and shortner_enabled:
+        if not is_user_pro and user_id != OWNER_ID and not is_short_link and shortner_enabled and user_credits <= 0:
             try:
                 short_link = get_short(f"https://t.me/{client.username}?start=yu3elk{base64_string}7", client)
             except Exception as e:
@@ -222,6 +225,9 @@ async def start_command(client: Client, message: Message):
                     protect_content=client.protect
                 )
                 yugen_msgs.append(copied_msg)
+                # Deduct 1 credit after successful delivery
+            if not is_user_pro and not is_short_link:
+                await client.mongodb.deduct_credit(user_id)
             except FloodWait as e:
                 await asyncio.sleep(e.x)
                 copied_msg = await msg.copy(
@@ -231,6 +237,8 @@ async def start_command(client: Client, message: Message):
                     protect_content=client.protect
                 )
                 yugen_msgs.append(copied_msg)
+            if not is_user_pro and not is_short_link:
+                await client.mongodb.deduct_credit(user_id)
             except Exception as e:
                 client.LOGGER(__name__, client.name).warning(f"Failed to send message: {e}")
                 pass
@@ -290,6 +298,8 @@ async def request_command(client: Client, message: Message):
     user_id = message.from_user.id
     is_admin = user_id in client.admins  # ✅ Fix this line
     is_user_premium = await client.mongodb.is_pro(user_id)
+    credits = await client.mongodb.get_credits(user_id)
+
 
     if is_admin or user_id == OWNER_ID:
         await message.reply_text("🔹 **You are my sensei!**\nThis command is only for users.")
@@ -333,6 +343,8 @@ async def my_plan(client: Client, message: Message):
         return
     
     is_user_premium = await client.mongodb.is_pro(user_id)
+    credits = await client.mongodb.get_credits(user_id)
+
 
     if is_user_premium:
         await message.reply_text(
@@ -347,7 +359,8 @@ async def my_plan(client: Client, message: Message):
             "**👤 Profile Information:**\n\n"
             "🔸 Ads: Enabled\n"
             "🔸 Plan: Free\n"
-            "🔸 Request: Disabled\n\n"
+            "🔸 Request: Disabled\n"
+            f"💳 Credits: {credits}\n"
             "🔓 Unlock Premium to get more benefits\n"
-            "Contact: @GetoPro"
+            "Contact: @ITSANIMEN"
         )
