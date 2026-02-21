@@ -106,7 +106,7 @@ class MongoDB:
         return bool(found)
 
     async def add_user(self, user_id: int, ban: bool = False):
-        await self.user_data.insert_one({'_id': user_id, 'ban': ban})
+        await self.user_data.insert_one({'_id': user_id, 'ban': ban, 'credits': 5})
 
     async def full_userbase(self) -> list[int]:
         cursor = self.user_data.find()
@@ -125,6 +125,31 @@ class MongoDB:
         user = await self.user_data.find_one({'_id': user_id})
         return user.get('ban', False) if user else False
 
+    async def get_credits(self, user_id: int):
+        user = await self.user_data.find_one({'_id': user_id})
+        if not user:
+            return 0
+        if 'credits' not in user:
+            await self.user_data.update_one(
+                {'_id': user_id},
+                {'$set': {'credits': 5}}
+            )
+            return 5
+        return user.get('credits', 0)
+
+    async def deduct_credit(self, user_id: int):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$inc': {'credits': -1}}
+        )
+
+    async def add_credits(self, user_id: int, amount: int = 5):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$inc': {'credits': amount}}
+        )
+
+    
     # ✅ FSUB CHANNELS FUNCTIONS
 
     async def set_fsub_channels(self, fsub_data: dict):
