@@ -1,6 +1,7 @@
 
 import asyncio
 from bot import Bot, web_app
+from bot import start_flask
 from pyrogram import compose
 from config import *
 
@@ -35,5 +36,7 @@ async def runner():
         main(),
         web_app()
     )
+
+start_flask()  # 🚀 Open Render Port
 
 asyncio.run(runner())
