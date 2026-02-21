@@ -149,7 +149,62 @@ class MongoDB:
             {'$inc': {'credits': amount}}
         )
 
+    async def mark_verified(self, user_id: int):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$set': {'verified': True}},
+            upsert=True
+        )
+
+    async def is_verified(self, user_id: int):
+        user = await self.user_data.find_one({'_id': user_id})
+        return user.get("verified", False) if user else False
     
+    async def set_verify_session(self, user_id: int):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$set': {'verify_session': True}},
+            upsert=True
+        )
+
+    async def clear_verify_session(self, user_id: int):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$set': {'verify_session': False}}
+        )
+
+    async def has_verify_session(self, user_id: int):
+        user = await self.user_data.find_one({'_id': user_id})
+        return user.get("verify_session", False) if user else False
+
+    async def add_used_credit(self, user_id: int):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$inc': {'used_credits': 1}},
+            upsert=True
+        )
+
+    async def get_used_credits(self, user_id: int):
+        user = await self.user_data.find_one({'_id': user_id})
+        return user.get("used_credits", 0) if user else 0
+    
+    async def set_skip_deduct(self, user_id: int):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$set': {'skip_deduct': True}},
+            upsert=True
+        )
+    
+    async def should_skip_deduct(self, user_id: int):
+        user = await self.user_data.find_one({'_id': user_id})
+        return user.get("skip_deduct", False) if user else False
+    
+    async def clear_skip_deduct(self, user_id: int):
+        await self.user_data.update_one(
+            {'_id': user_id},
+            {'$set': {'skip_deduct': False}}
+        )
+
     # ✅ FSUB CHANNELS FUNCTIONS
 
     async def set_fsub_channels(self, fsub_data: dict):
