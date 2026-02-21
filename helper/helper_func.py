@@ -381,7 +381,14 @@ def force_sub(func):
             # Fallback: send new message if edit fails
             try:
                 await msg.delete()
-                await message.reply(text=channels_message, reply_markup=buttons_markup)
+                await message.reply(text=channels_message.format(
+                    first=message.from_user.first_name,
+                    id=message.from_user.id,
+                    mention=message.from_user.mention,
+                    username='@' + message.from_user.username if message.from_user.username else "No Username"
+                ),
+                                    reply_markup=buttons_markup
+                                   )
             except Exception:
                 pass
 
