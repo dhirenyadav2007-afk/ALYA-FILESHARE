@@ -37,9 +37,31 @@ async def start_command(client: Client, message: Message):
             if base64_string.startswith("yu3elk"):
                 base64_string = base64_string[6:-1]
                 is_short_link = True
-            if is_short_link:
+                session_active = await client.mongodb.has_verify_session(user_id)
+                if not session_active:
+                    return await message.reply("⚠️ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴇxᴘɪʀᴇᴅ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
+                await client.mongodb.clear_verify_session(user_id)
                 await client.mongodb.add_credits(user_id, 5)
-
+                unlock_link = f"https://t.me/{client.username}?start={base64_string}"
+                success_photo = client.messages.get("SHORT_PIC", "")
+                success_caption = (
+                    "<b>ⓘ Your verification is successful!</b>\n"
+                    "<blockquote>✦ 5 Credits Added to Your Account.</blockquote>"
+                )
+                await client.send_photo(
+                    chat_id=message.chat.id,
+                    photo=success_photo,
+                    caption=success_caption,
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("✨ ᴄʟɪᴄᴋ ʜᴇʀᴇ ✨", url=unlock_link)
+                        ],
+                        [
+                            InlineKeyboardButton("• ʙᴜʏ ᴘʀᴇᴍɪᴜᴍ •", url="https://t.me/ITSANIMEN")
+                        ]
+                    ])
+                )
+                return
         except IndexError:
             return await message.reply("Invalid command format.")
 
@@ -52,6 +74,7 @@ async def start_command(client: Client, message: Message):
 
         # 5. If user is not premium AND shortner is enabled, send short URL and return
         if not is_user_pro and user_id != OWNER_ID and not is_short_link and shortner_enabled and user_credits <= 0:
+            await client.mongodb.set_verify_session(user_id)
             try:
                 short_link = get_short(f"https://t.me/{client.username}?start=yu3elk{base64_string}7", client)
             except Exception as e:
@@ -225,9 +248,7 @@ async def start_command(client: Client, message: Message):
                     protect_content=client.protect
                 )
                 yugen_msgs.append(copied_msg)
-                # Deduct 1 credit after successful delivery
-            if not is_user_pro and not is_short_link:
-                await client.mongodb.deduct_credit(user_id)
+                
             except FloodWait as e:
                 await asyncio.sleep(e.x)
                 copied_msg = await msg.copy(
@@ -237,11 +258,25 @@ async def start_command(client: Client, message: Message):
                     protect_content=client.protect
                 )
                 yugen_msgs.append(copied_msg)
-            if not is_user_pro and not is_short_link:
-                await client.mongodb.deduct_credit(user_id)
             except Exception as e:
                 client.LOGGER(__name__, client.name).warning(f"Failed to send message: {e}")
                 pass
+        # Deduct 1 credit per link unlock
+        if not is_user_pro and not is_short_link:
+            skip = await client.mongodb.should_skip_deduct(user_id)
+    
+            if skip:
+                await client.mongodb.clear_skip_deduct(user_id)
+            else:
+                await client.mongodb.deduct_credit(user_id)
+                await client.mongodb.add_used_credit(user_id)
+                credits_left = await client.mongodb.get_credits(user_id)
+
+            if credits_left <= 0:
+                await client.mongodb.user_data.update_one(
+                    {'_id': user_id},
+                    {'$set': {'verify_session': False}}
+                )
 
         # 8. Auto delete timer
         if messages and client.auto_del > 0:
@@ -364,3 +399,94 @@ async def my_plan(client: Client, message: Message):
             "🔓 Unlock Premium to get more benefits\n"
             "Contact: @ITSANIMEN"
         )
+
+#===============================================================#
+
+@Client.on_message(filters.command('credits') & filters.private)
+async def credits_command(client: Client, message: Message):
+    user_id = message.from_user.id
+    
+    credits = await client.mongodb.get_credits(user_id)
+    used = await client.mongodb.get_used_credits(user_id)
+
+
+    text = (
+        "<blockquote>📁 <b>𝖄𝖔𝖚𝖗 𝕮𝖗𝖊𝖉𝖎𝖙𝖘 𝕴𝖓𝖋𝖔𝖗𝖒𝖆𝖙𝖎𝖔𝖓</b></blockquote>\n\n"
+        f"▪️ <b>Remaining Credits:</b> <code>{credits}</code>\n"
+        f"▪️ <b>Total Used Credits:</b> <code>{used}</code>\n"
+        "▪️ <b>Credits Per Verification:</b> <code>5</code>\n\n"
+        "<i>Use /cplan to earn more credits!</i>"
+    )
+
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("💳 ᴄʀᴇᴅɪᴛ ᴘʟᴀɴꜱ", callback_data="show_cplan")],
+        [InlineKeyboardButton("• ᴄʟᴏꜱᴇ •", callback_data="close")]
+    ])
+
+    await message.reply_text(text, reply_markup=buttons)
+
+#===============================================================#
+
+@Client.on_message(filters.command('cplan') & filters.private)
+async def credit_plan(client: Client, message: Message):
+
+    text = (
+        "<blockquote>✦ <b>𝗖𝗥𝗘𝗗𝗜𝗧 𝗕𝗔𝗦𝗘𝗗 𝗣𝗟𝗔𝗡𝗦</b></blockquote>\n"
+        "━━━━━━━━━━━━━━━━━━━\n"
+        "<blockquote>\n"
+        "» 30 credits : ₹50\n"
+        "» 60 credits : ₹110\n"
+        "» 120 credits : ₹220\n"
+        "» 240 credits : ₹480</blockquote>\n"
+        "━━━━━━━━━━━━━━━━━━━\n"
+        "<blockquote>✦ Contact @ITSANIMEN to Buy Credits</blockquote>"
+    )
+
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("• ᴄʟᴏꜱᴇ •", callback_data="close")]
+    ])
+
+    await message.reply_text(text, reply_markup=buttons)
+
+#===============================================================#
+
+@Client.on_message(filters.command("add_credit") & filters.private)
+async def add_credit_command(client: Client, message: Message):
+
+    if message.from_user.id not in client.admins:
+        return await message.reply_text("❌ You are not allowed to use this command.")
+
+    if len(message.command) != 3:
+        return await message.reply_text(
+            "<blockquote>⚠️ Usage:\n/add_credit user_id amount</blockquote>"
+        )
+
+    try:
+        user_id = int(message.command[1])
+        amount = int(message.command[2])
+    except:
+        return await message.reply_text("⚠️ Invalid User ID or Amount.")
+
+    # Check if user exists
+    if not await client.mongodb.present_user(user_id):
+        await client.mongodb.add_user(user_id)
+
+    await client.mongodb.add_credits(user_id, amount)
+
+    await message.reply_text(
+        f"<blockquote>✅ Credits Added Successfully</blockquote>\n\n"
+        f"👤 User ID: <code>{user_id}</code>\n"
+        f"💳 Added Credits: <code>{amount}</code>"
+    )
+
+    try:
+        await client.send_message(
+            chat_id=user_id,
+            text=(
+                f"<blockquote>🎉 Credits Added to Your Account</blockquote>\n\n"
+                f"💳 Amount: <code>{amount}</code>\n"
+                f"Use /credits to check your balance."
+            )
+        )
+    except:
+        pass
