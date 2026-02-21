@@ -1,14 +1,17 @@
-
 import asyncio
-from bot import Bot, web_app
-from bot import start_flask
+asyncio.set_event_loop(asyncio.new_event_loop())
+
+from bot import Bot, web_app, run_flask
 from pyrogram import compose
 from config import *
+from threading import Thread
+
+# 🚀 Start Flask FIRST for Render health check
+Thread(target=run_flask, daemon=True).start()
 
 async def main():
     app = []
 
-    # Create bot instance using config.py values
     app.append(
         Bot(
             SESSION,
@@ -30,13 +33,10 @@ async def main():
 
     await compose(app)
 
-
 async def runner():
     await asyncio.gather(
         main(),
         web_app()
     )
-
-start_flask()  # 🚀 Open Render Port
 
 asyncio.run(runner())
