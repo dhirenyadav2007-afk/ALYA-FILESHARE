@@ -6,7 +6,7 @@ from config import MSG_EFFECT, OWNER_ID
 from plugins.shortner import get_short
 from helper.helper_func import get_messages, force_sub, decode, batch_auto_del_notification
 import asyncio
-
+import time
 #===============================================================#
 
 @Client.on_message(filters.command('start') & filters.private)
@@ -37,9 +37,32 @@ async def start_command(client: Client, message: Message):
             if base64_string.startswith("yu3elk"):
                 base64_string = base64_string[6:-1]
                 is_short_link = True
-                session_active = await client.mongodb.has_verify_session(user_id)
-                if not session_active:
-                    return await message.reply("⚠️ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴇxᴘɪʀᴇᴅ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
+                session, saved_payload, verify_time = await client.mongodb.get_verify_data(user_id)
+                if not session:
+                    return await message.reply(
+                        "<blockquote>⚠️ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴇxᴘɪʀᴇᴅ.\nᴘʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ʟɪɴᴋ.</blockquote>"
+                    )
+                # ❌ OLD LINK USED
+                if saved_payload != base64_string:
+                    return await message.reply(
+                        "<blockquote>🚫 ᴛʜɪs ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ʟɪɴᴋ ɪꜱ ɴᴏ ʟᴏɴɢᴇʀ ᴠᴀʟɪᴅ.</blockquote>"
+                    )
+                time_taken = int(time.time()) - verify_time
+                # 🚫 BYPASS DETECTED (<45 sec)
+                if time_taken < 45:
+                    await client.mongodb.clear_verify_session(user_id)
+                    return await message.reply(
+                        "<blockquote>🚫 ʙʏᴘᴀss ᴅᴇᴛᴇᴄᴛᴇᴅ!\n"
+                        "⧗ ᴛɪᴍᴇ ᴛᴀᴋᴇɴ < 45s\n"
+                        "ᴘʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴘᴇʀʟʏ.</blockquote>"
+                    )
+                # 🚫 SESSION TOO OLD (>2 min)
+                if time_taken > 240:
+                    await client.mongodb.clear_verify_session(user_id)
+                    return await message.reply(
+                        "<blockquote>⚠️ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴛɪᴍᴇᴏᴜᴛ!\n"
+                        "ᴘʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ʟɪɴᴋ.</blockquote>"
+                    )
                 await client.mongodb.clear_verify_session(user_id)
                 await client.mongodb.add_credits(user_id, 5)
                 unlock_link = f"https://t.me/{client.username}?start={base64_string}"
