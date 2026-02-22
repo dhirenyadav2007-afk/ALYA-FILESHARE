@@ -106,7 +106,7 @@ async def start_command(client: Client, message: Message):
 
             short_photo = client.messages.get("SHORT_PIC", "")
             short_caption = client.messages.get("SHORT_MSG", "")
-            tutorial_link = getattr(client, 'tutorial_link', "https://t.me/How_to_Download_7x/26")
+            tutorial_link = getattr(client, 'tutorial_link', "https://t.me/ANIME_X_FLEX/19")
 
             await client.send_photo(
                 chat_id=message.chat.id,
