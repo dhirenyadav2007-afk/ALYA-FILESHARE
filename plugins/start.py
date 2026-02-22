@@ -97,7 +97,7 @@ async def start_command(client: Client, message: Message):
 
         # 5. If user is not premium AND shortner is enabled, send short URL and return
         if not is_user_pro and user_id != OWNER_ID and not is_short_link and shortner_enabled and user_credits <= 0:
-            await client.mongodb.set_verify_session(user_id)
+            await client.mongodb.set_verify_session(user_id, base64_string)
             try:
                 short_link = get_short(f"https://t.me/{client.username}?start=yu3elk{base64_string}7", client)
             except Exception as e:
