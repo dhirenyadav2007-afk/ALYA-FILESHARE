@@ -1,6 +1,6 @@
 import motor.motor_asyncio
 from datetime import datetime, timedelta
-
+import time
 class MongoDB:
     _instances = {}
 
@@ -160,17 +160,35 @@ class MongoDB:
         user = await self.user_data.find_one({'_id': user_id})
         return user.get("verified", False) if user else False
     
-    async def set_verify_session(self, user_id: int):
+    async def set_verify_session(self, user_id: int, payload: str):
         await self.user_data.update_one(
             {'_id': user_id},
-            {'$set': {'verify_session': True}},
+            {'$set': {'verify_session': True,
+                      'verify_payload': payload,
+                      'verify_time': int(time.time())
+                      }
+            },
             upsert=True
+        )
+    
+    async def get_verify_data(self, user_id: int):
+        user = await self.user_data.find_one({'_id': user_id})
+        if not user:
+            return None, None, None
+        return (
+            user.get("verify_session"),
+            user.get("verify_payload"),
+            user.get("verify_time")
         )
 
     async def clear_verify_session(self, user_id: int):
         await self.user_data.update_one(
             {'_id': user_id},
-            {'$set': {'verify_session': False}}
+            {'$set': {'verify_session': False,
+                      'verify_payload': None,
+                      'verify_time': None
+                     }
+            }
         )
 
     async def has_verify_session(self, user_id: int):
