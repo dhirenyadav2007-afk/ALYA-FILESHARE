@@ -550,7 +550,39 @@ async def buy_command(client, message):
 @Client.on_message(filters.command('bought') & filters.private)
 async def bought_command(client, message):
 
+    user = message.from_user
+
+    # ❌ if not replying
+    if not message.reply_to_message:
+        return await message.reply(
+            "<blockquote>ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ʀᴇᴘʟʏ ᴛᴏ ʏᴏᴜʀ ᴘᴀʏᴍᴇɴᴛ ꜱᴄʀᴇᴇɴꜱʜᴏᴛ</blockquote>"
+        )
+
+    replied = message.reply_to_message
+
+    # ❌ if not photo
+    if not replied.photo:
+        return await message.reply(
+            "<blockquote>ʀᴇᴘʟʏ ᴏɴʟʏ ᴛᴏ ᴘᴀʏᴍᴇɴᴛ ꜱᴄʀᴇᴇɴꜱʜᴏᴛ</blockquote>"
+        )
+
+    caption = (
+        f"📥 <b>New Premium Purchase Request</b>\n"
+        f"👤 User: {user.mention}\n"
+        f"🆔 ID: <code>{user.id}</code>\n\n"
+        f"Check Screenshot"
+    )
+
+    for admin in client.admins:
+        try:
+            await replied.copy(
+                chat_id=admin,
+                caption=caption
+            )
+        except:
+            pass
+
     await message.reply(
-        "<blockquote>📸 Send your Payment Screenshot\n\n"
-        "Reply to this message with Screenshot.</blockquote>"
+        "<blockquote>✅ Screenshot Sent to Admin.\n"
+        "Please wait for activation.</blockquote>"
     )
