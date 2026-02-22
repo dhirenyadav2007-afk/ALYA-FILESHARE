@@ -469,28 +469,10 @@ async def payment_qr(client, query):
 
 #===============================================================#
 
-@Client.on_message(filters.photo & filters.private)
-async def payment_proof(client, message):
+@Client.on_callback_query(filters.regex("^send_ss$"))
+async def send_ss_callback(client, query):
 
-    user = message.from_user
-
-    caption = (
-        f"📥 <b>New Premium Purchase Request</b>\n"
-        f"👤 User: {user.mention}\n"
-        f"🆔 ID: <code>{user.id}</code>\n\n"
-        f"Check Screenshot"
-    )
-
-    for admin in client.admins:
-        try:
-            await message.copy(
-                chat_id=admin,
-                caption=caption
-            )
-        except:
-            pass
-
-    await message.reply(
-        "<blockquote>✅ Screenshot Sent to Admin.\n"
-        "Please wait for activation.</blockquote>"
+    await query.message.reply(
+        "<blockquote>ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ʀᴇᴘʟʏ ᴛᴏ ʏᴏᴜʀ ᴘᴀʏᴍᴇɴᴛ ꜱᴄʀᴇᴇɴꜱʜᴏᴛ</blockquote>\n\n"
+        "<code>/bought</code>"
     )
