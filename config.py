@@ -4,12 +4,12 @@ from logging.handlers import RotatingFileHandler
 # Bot Configuration
 LOG_FILE_NAME = "bot.log"
 PORT = '5010'
-OWNER_ID = 7156099919
+OWNER_ID = "7156099919"
 
 MSG_EFFECT = 5046509860389126442
 
 SHORT_URL = "shrinkme.io" # shortner url 
-SHORT_API = "e75f29485ddb045e6887d284f762f3daeb84f869" 
+SHORT_API = "e75f29485ddb045e6887d284f762f3daeb84f869"
 SHORT_TUT = "https://t.me/ANIME_X_FLEX/19"
 
 # Bot Configuration
