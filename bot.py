@@ -18,20 +18,20 @@ version = "v1.0.0"
 # ✅ FLASK + THREAD (Render Support)
 # ──────────────────────────────
 
-#flask_app = Flask(__name__)
+flask_app = Flask(__name__)
 
-#@flask_app.route("/")
-#def home():
-#    return "Bot is running!", 200
+@flask_app.route("/")
+def home():
+    return "Bot is running!", 200
 
 
-#def run_flask():
-#    flask_app.run(
-#        host="0.0.0.0",
-#        port=int(os.environ.get("PORT", 10000)),
-#        threaded=True,
-#        use_reloader=False
-#    )
+def run_flask():
+    flask_app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 10000)),
+        threaded=True,
+        use_reloader=False
+    )
 
 #================================================
 
