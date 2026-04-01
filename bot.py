@@ -2,8 +2,8 @@
 import os
 from aiohttp import web
 from plugins import web_server
-#from threading import Thread
-#from flask import Flask
+from threading import Thread
+from flask import Flask
 from pyrogram import Client
 from pyrogram.enums import ParseMode
 import sys
